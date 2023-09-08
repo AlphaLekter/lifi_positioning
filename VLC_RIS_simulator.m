@@ -1,21 +1,24 @@
 %%
 % possibile parametro di ottimizzazione: distanza fra le RIS?
+
 %% TODO
 % 2. aggiustare yticks grafici boxplot
+
 %% clear environment
-clc; clear all; close all;
+clc; clear; close all;
+
 %% parameters setting
 Psi     = 70;               % LED half-power semiangle [degree]
-rho     = 0.95;             % Reflection coefficient
-%A_pd    = 1e-04;            % 1cm^2 - Physical area of the PD [m^2]     % [C2022]
-A_pd    = 0.2e-04;          % Physical area of the PD [m^2]     %
+% rho     = 0.95;             % Reflection coefficient (da ignorare)
+% A_pd    = 1e-04;            % 1cm^2 - Physical area of the PD [m^2]  %  [C2022]
+A_pd    = 0.2e-04;          % Physical area of the PD [m^2]
 T_of    = 1;                % Optical Filter Gain
 a       = 1.5;              % Refractive index
 Phi_FoV = 70;               % Field of view [degree]
-B       = 5e6;             % System bandwidth [Hz]
-%B       = 100e6;             % System bandwidth [Hz]
-%R_pd    = 2.2e-8;           % Responsivity [A][m^2] / [W] -> https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6868970
-R_pd    = 0.54;              %(Sensitivity) [A/W]
+B       = 5e6;              % System bandwidth [Hz]
+%B       = 100e6;           % System bandwidth [Hz]
+%R_pd    = 2.2e-8;          % Responsivity [A][m^2] / [W] -> https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6868970
+R_pd    = 0.54;             % (Sensitivity) [A/W]
 q       = 3;                % Conversion ration of optical-to-electrical power
 N       = 10e-21;           % Power spectral density [A^2/Hz]
 lumen_level = 1000;
@@ -23,8 +26,8 @@ p = lumen_level / 683;      % transmission power 6000 [Lumens] -> [Watt]
 
 % noise parameter
 q_0     = 1.602e-19;        % electronic charge [Coulombs]
-I_bg    = 84e-6;           % background light current [A] -> 84 [µA]
-%I_bg    = 5e-12;            % 5pA
+I_bg    = 84e-6;            % background light current [A] -> 84 [µA]
+%I_bg    = 5e-12;           % 5pA
 k_B     = 1.38064852e-23;   % Boltzmann constant [Joule/Kelvin]
 T_k     = 295;              % absolute temperature [K]
 G_0     = 10;               % open-loop voltage gain
@@ -38,54 +41,45 @@ I_3     = 0.0868;           % noise BW factor
 x_max       = 5;            % room size x-axis         % [SCA+2022]
 y_max       = 5;            % room size y-axis         % [SCA+2022]
 z_max       = 3;            % room size z-axis         % 3 in [SCA+2022]
+
 % room size
 %  x_max       = 7;            % room size x-axis         % [SCA+2022]
 %  y_max       = 7;            % room size y-axis         % [SCA+2022]
 %  z_max       = 5;            % room size z-axis         % 3 in [SCA+2022]
+
 granularity = .05;          % plot accuracy
 
 number_of_samples = 1;
 % plot info
-Entity_enabled = [1 1 1 1 1]; % LED - RIS - RIS2 - RIS3 - RIS4
+Entity_enabled = [1 1 1 1]; % LED1 - LED2 - LED3 - LED4
 PLOT3D_enabled = 0;
 PLOT2D_enabled = 1;
-plot_1         = 0;
-plot_2         = 0;
-plot_3         = 0;
+plot_1         = 1;
+plot_2         = 1;
+plot_3         = 1;
 plot_4         = 1;
-plot_5         = 0;
-plot_6         = 0;
+plot_5         = 1;
+plot_6         = 1;
 plot_7         = 1;
-%number_of_plot_needed       = 18;
+number_of_plot_needed = 18;
 
 % tilt info
 alpha   = 0;
 beta    = 0;
 
 %% set entities position
-LED     = [x_max/2    , y_max/2       , z_max  ];
 
-% RIS1    = [x_max/2      , 0            , z_max/2+0.3*z_max];
-% RIS2    = [0            , y_max/2      , z_max/2+0.3*z_max];
-% RIS3    = [x_max        , y_max/2      , z_max/2+0.3*z_max];
-% RIS4    = [x_max/2      , y_max        , z_max/2+0.3*z_max];
+% LED1 = [x_max/2      , 0            , z_max];
+% LED2 = [0            , y_max/2      , z_max];
+% LED3 = [x_max        , y_max/2      , z_max];
+% LED4 = [x_max/2      , y_max        , z_max];
 
-RIS1    = [x_max/2      , 0            , z_max*2/3];
-RIS2    = [0            , y_max/2      , z_max*2/3];
-RIS3    = [x_max        , y_max/2      , z_max*2/3];
-RIS4    = [x_max/2      , y_max        , z_max*2/3];
+LED1 = [x_max/3      , y_max/3       , z_max];
+LED2 = [x_max/3      , y_max*2/3     , z_max];
+LED3 = [x_max*2/3    , y_max/3       , z_max];
+LED4 = [x_max*2/3    , y_max*2/3     , z_max];
 
 %% Estimate light power
-matrix_size = [length(0:granularity:x_max), length(0:granularity:y_max), length(0:granularity:z_max)];
-distance_error_check = struct();
-
-distance_error_check.LED = struct();
-distance_error_check.RIS1 = struct();
-
-impulseMatrix = zeros(matrix_size);
-overlap_info =  zeros(matrix_size);
-%dataRateMatrix = zeros(matrix_size);
-
 x_probe = 0:granularity:x_max;
 y_probe = 0:granularity:y_max;
 z_probe = 0:granularity:z_max;
@@ -94,8 +88,19 @@ x_len = length(x_probe);
 y_len = length(y_probe);
 z_len = length(z_probe);
 
-tic;
-%PDect = struct();
+matrix_size = [x_len, y_len, z_len];
+distance_error_check = struct();
+
+% ??? faccio un distance_error_check per ogni LED?
+distance_error_check.LED1 = struct();
+
+impulseMatrix = zeros(matrix_size);
+overlap_info =  zeros(matrix_size);
+dataRateMatrix = zeros(matrix_size);
+
+tic; % tempo di calcolo
+% PDect = struct();
+
 if plot_2
     for x_index = 1:x_len
         for y_index = 1:y_len
@@ -104,25 +109,31 @@ if plot_2
                 
                 % se attivato rallenta di molto il processo di calcolo
                 if PLOT3D_enabled
-                    plotCube(LED, RIS1, RIS2, RIS3, RIS4, PDect, x_max, y_max, z_max);
+                    plotCube(LED1, LED2, LED3, LED4, PDect, x_max, y_max, z_max);
                 end
                 
-                [impulseMatrix(x_index,y_index,z_index), overlap_info(x_index,y_index,z_index)] = ...
-                    drawChannelResponse...
-                    (Psi, LED, RIS1, RIS2, RIS3, RIS4, PDect, Phi_FoV, A_pd, T_of, rho, a, Entity_enabled, alpha, beta );
-                lowerBoundDataRateMatrix(x_index,y_index,z_index) = lowerBoundDataRate(impulseMatrix(x_index,y_index,z_index), B, p, R_pd, q, N);
+                % carica le matrici degli impulsi e delle sovrapposizioni con i dati
+                [ impulseMatrix(x_index,y_index,z_index), overlap_info(x_index,y_index,z_index) ] = ...
+                    drawChannelResponse( ...
+                        Psi, LED1, LED2, LED3, LED4, PDect, Phi_FoV, ...
+                        A_pd, T_of, a, Entity_enabled, alpha, beta ...
+                    );
+
+                lowerBoundDataRateMatrix(x_index,y_index,z_index) = ...
+                    lowerBoundDataRate(impulseMatrix(x_index,y_index,z_index), B, p, R_pd, q, N);
             end
         end
     end
     toc;
-    
+
     %% plot section
+    
     pause(0.01);
     close all;
     if PLOT2D_enabled
         rel_min = 0;
         nan_idx = isnan(impulseMatrix);
-        rel_max = mean(mean(mean(impulseMatrix(~nan_idx))));
+        rel_max = mean(mean(mean(impulseMatrix(~nan_idx)))); % media di tutti i valori di impulso validi
         rel_max = rel_max * 2.5;
         
         z_index = 1:length(z_probe);
@@ -137,7 +148,7 @@ if plot_2
             imagesc(matrix_slice);
             
             colorbar;
-            caxis([rel_min rel_max]);   % same scale
+            clim([rel_min rel_max]);   % same scale
             xlabel('Y');
             ylabel('X');
             title('Z = '+string((z_probe(floor(plot_index(i)))))+' m');
@@ -157,7 +168,7 @@ if plot_2
             imagesc(matrix_slice);
             camroll(90)
             colorbar;
-            caxis([rel_min rel_max]); % same scale
+            clim([rel_min rel_max]); % same scale
             xlabel('Z');
             ylabel('X');
             title('Y = '+string((y_probe(floor(plot_index(i)))))+' m el:'+plot_index(i));
@@ -177,7 +188,7 @@ if plot_2
             imagesc(matrix_slice);
             camroll(90)
             colorbar;
-            caxis([rel_min rel_max]);   % same scale
+            clim([rel_min rel_max]);   % same scale
             xlabel('Z');
             ylabel('Y');
             title('X = '+string((x_probe(floor(plot_index(i)))))+' m el:'+plot_index(i));
@@ -199,7 +210,7 @@ if plot_2
             imagesc(matrix_slice);
             
             colorbar
-            caxis([0 5]);   % same scale
+            clim([0 5]);   % same scale
             xlabel('Y');
             ylabel('X');
             title('Z = '+string((z_probe(floor(plot_index(i)))))+' m');
@@ -208,24 +219,25 @@ if plot_2
         sgtitle('Overlapping MAP \n Z-sliced - Room size -' + string(x_max) +'x' + string(y_max)+'x'+string(z_max) +' meters');
         
     end
-    
 end
+
 %% single entity distance error estimation
 if plot_1
     pause(0.01);
     z_plot_index = linspace(0, max(z_probe), number_of_plot_needed);
-    distanceErrorEstimation(LED, RIS1, RIS2, RIS3, RIS4, number_of_plot_needed, p, ...
+    distanceErrorEstimation(LED1, LED1, LED2, LED3, LED4, number_of_plot_needed, p, ...
         alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, R_pd, q_0, k_B, T_k, eta, ...
         I_2, I_3, Gamma, g_m, I_bg, G_0, B, x_probe, y_probe, z_plot_index, number_of_samples)
 end
+
 %% noise contribution
 if plot_3
     shift_distance = 1; % meter
     granularity = 0.01;
+
     x_probe = 0:granularity:x_max;
     y_probe = 0:granularity:y_max;
     z_probe = 0:9*granularity:z_max;
-    
     
     x_len = length(x_probe);
     y_len = length(y_probe);
@@ -238,9 +250,7 @@ if plot_3
     legend_array_ris = ["\Delta_n"];
     legend_array_ris = [];
     
-    
     for bandIdx = 1:length(B_array)
-        
         B=B_array(bandIdx);
         
         pause(0.01);
@@ -263,16 +273,16 @@ if plot_3
         for z_index = 1:(z_len)
             
             % only LoS contribution
-            PDect_pos_LED = [LED(1), LED(2), LED(3) - z_probe(z_index)];
-            received_power_LED(z_index) = R_pd*p*singleEntityContribution(LED, 0, PDect_pos_LED, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-            distance_LED(z_index) = calculateDistance(LED, PDect_pos_LED);
+            PDect_pos_LED = [LED1(1), LED1(2), LED1(3) - z_probe(z_index)];
+            received_power_LED(z_index) = R_pd*p*singleEntityContribution(LED1, 0, PDect_pos_LED, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
+            distance_LED(z_index) = calculateDistance(LED1, PDect_pos_LED);
             
             for idx_rnd = 1:max_rnd
                 [ n_shoot_LED, n_thermal_LED, nsh_var, nth_var] = noiseEstimation(received_power_LED(z_index), q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
                 n_shoot_LED_contribution(z_index) = nsh_var;
                 n_thermal_LED_contribution(z_index) = nth_var;
                 received_power_LED_w_noise = received_power_LED(z_index) + n_shoot_LED + n_thermal_LED;
-                dLED = getLEDDistanceByEstimatedPower(LED(3) - PDect_pos_LED(3), p, A_pd, received_power_LED_w_noise, Psi, T_of, Phi_FoV, a, R_pd);
+                dLED = getLEDDistanceByEstimatedPower(LED1(3) - PDect_pos_LED(3), p, A_pd, received_power_LED_w_noise, Psi, T_of, Phi_FoV, a, R_pd);
                 
                 if isnan(dLED)
                     posLEDError(z_index, idx_rnd) = NaN;
@@ -287,15 +297,15 @@ if plot_3
         posRISError = NaN(z_len, max_rnd);
         
         for z_index = 1:z_len-2
-            if RIS1(3)-z_probe(z_index) > 0
-                PDect_pos_RIS1 = [RIS1(1), RIS1(2)+y_probe(z_index), RIS1(3)-z_probe(z_index)];
+            if LED1(3)-z_probe(z_index) > 0
+                PDect_pos_RIS1 = [LED1(1), LED1(2)+y_probe(z_index), LED1(3)-z_probe(z_index)];
                 % LoS Contribution
-                received_power_LoS = R_pd*p*singleEntityContribution(LED, 0, [LED(1) LED(2) LED(3)-shift_distance], alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-                %distance_RIS1_LoS = calculateDistance(LED, PDect_pos_RIS1);
+                received_power_LoS = R_pd*p*singleEntityContribution(LED1, 0, [LED1(1) LED1(2) LED1(3)-shift_distance], alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
+                %distance_RIS1_LoS = calculateDistance(LED1, PDect_pos_RIS1);
                 
                 % NLoS Contribution
-                received_power_NLoS(z_index) = R_pd*p*singleEntityContribution(LED, RIS1, PDect_pos_RIS1, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
-                distance_RIS1(z_index)=calculateDistance(RIS1, PDect_pos_RIS1);
+                received_power_NLoS(z_index) = R_pd*p*singleEntityContribution(LED1, LED1, PDect_pos_RIS1, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
+                distance_RIS1(z_index)=calculateDistance(LED1, PDect_pos_RIS1);
                 
                 for idx_rnd = 1:max_rnd
                     % noise due to LoS
@@ -311,7 +321,7 @@ if plot_3
                     n_thermal_RIS1_contribution(z_index) = nth_var_LoS + nth_var;
                     
                     received_power_RIS1_w_noise  =  received_power_NLoS(z_index) + n_shoot_RIS1 + n_thermal_RIS1 + n_shoot_LoS + n_thermal_LoS;
-                    dRIS1 = getRISDistanceByEstimatedPower(RIS1(3) - PDect_pos_RIS1(3), p, A_pd, received_power_RIS1_w_noise, Psi, T_of, Phi_FoV, a, rho, cosd(calculateAngle(LED, RIS1, 0, 0)), R_pd, calculateDistance(LED, RIS1));
+                    dRIS1 = getRISDistanceByEstimatedPower(LED1(3) - PDect_pos_RIS1(3), p, A_pd, received_power_RIS1_w_noise, Psi, T_of, Phi_FoV, a, rho, cosd(calculateAngle(LED1, LED1, 0, 0)), R_pd, calculateDistance(LED1, LED1));
                     
                     if isnan(dRIS1)
                         posRISError(z_index, idx_rnd) = NaN;
@@ -332,7 +342,7 @@ if plot_3
         figure(100);
         %grid on;
         hold on;
-        %title("Noise estimation LED");
+        %title("Noise estimation LED1");
         ylabel('Signal Power [Ampere^2]');
         xlabel('Distance [m]');
         if bandIdx == 1
@@ -425,12 +435,12 @@ if plot_3
             SNR_LED(lumenIdx) = 10* log10(received_power_LED(lumenIdx).^2 / (nsh_var_LED+nth_var_LED));
             
             
-            PDect_pos_RIS1 = [RIS1(1),RIS1(2), RIS1(3) - shift_distance];
+            PDect_pos_RIS1 = [LED1(1),LED1(2), LED1(3) - shift_distance];
             received_power_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect_pos_LED, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
             %distance_RIS1_LoS = calculateDistance(LED, PDect_pos_RIS1);
             % NLoS Contribution
-            received_power_NLoS(lumenIdx) = R_pd*p*singleEntityContribution(LED, RIS1, PDect_pos_RIS1, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
-            distance_RIS1(lumenIdx)=calculateDistance(RIS1, PDect_pos_RIS1);
+            received_power_NLoS(lumenIdx) = R_pd*p*singleEntityContribution(LED, LED1, PDect_pos_RIS1, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
+            distance_RIS1(lumenIdx)=calculateDistance(LED1, PDect_pos_RIS1);
             [n_shoot_LoS, n_thermal_LoS, nsh_var_LoS, nth_var_LoS] = ...
                 noiseEstimation(received_power_LoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
             %n_shoot_LoS_contribution(z_index) = nsh_var_LoS;
@@ -484,7 +494,6 @@ if plot_3
     
 end
 
-
 %% Fig 2 epsilon n al variare di qualcosa
 if plot_5
     m = -(log(2)/log(cosd(Psi)));
@@ -505,11 +514,11 @@ if plot_5
                 PDect = [x_probe(x_index), y_probe(y_index),0];
                 
                 p_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-                p_NLoS = R_pd*p*singleEntityContribution(LED, RIS1, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
+                p_NLoS = R_pd*p*singleEntityContribution(LED, LED1, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
                 
-                theta_RS = calculateAngle(LED, RIS1, alpha, beta);
-                r_n = calculateDistance(LED, RIS1);
-                d_n = calculateDistance(RIS1, PDect);
+                theta_RS = calculateAngle(LED, LED1, alpha, beta);
+                r_n = calculateDistance(LED, LED1);
+                d_n = calculateDistance(LED1, PDect);
                 
                 %TODO
                 
@@ -522,7 +531,7 @@ if plot_5
                 sigma_0 = sqrt(nsh_var_LoS + nth_var_LoS);
                 sigma_n = sqrt(nsh_var_NLoS + nth_var_NLoS);
                 
-                beta_n  = ((rho * G * R_pd * A_pd * p*(m+1))/(2*pi)) * cosd(theta_RS)^m * RIS1(3);
+                beta_n  = ((rho * G * R_pd * A_pd * p*(m+1))/(2*pi)) * cosd(theta_RS)^m * LED1(3);
                 
                 delta_0 = sqrt((2/K_0) * sigma_0^2 * erfinv(1-epsilon)^2);
                 
@@ -589,7 +598,7 @@ if plot_5
     ylabel('X');
     xlabel('Y');
     hold on;
-    plot(RIS1(2),RIS1(1), 'x', 'MarkerSize', 25 );
+    plot(LED1(2),LED1(1), 'x', 'MarkerSize', 25 );
     plot(LED(2),LED(1), 'o', 'MarkerSize', 25 );
     
     figure(91);
@@ -614,12 +623,12 @@ if plot_5
     
     p_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
     
-    p_NLoS = R_pd*p*singleEntityContribution(LED, RIS1, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
+    p_NLoS = R_pd*p*singleEntityContribution(LED, LED1, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
     
-    theta_RS = calculateAngle(LED, RIS1, alpha, beta);
+    theta_RS = calculateAngle(LED, LED1, alpha, beta);
     
-    r_n = calculateDistance(LED, RIS1);
-    d_n = calculateDistance(RIS1, PDect);
+    r_n = calculateDistance(LED, LED1);
+    d_n = calculateDistance(LED1, PDect);
     
     %TODO
     
@@ -632,7 +641,7 @@ if plot_5
     sigma_0 = sqrt(nsh_var_LoS + nth_var_LoS);
     sigma_n = sqrt(nsh_var_NLoS + nth_var_NLoS);
     
-    beta_n  = ((rho * G * R_pd * A_pd * p*(m+1))/(2*pi)) * cosd(theta_RS)^m * RIS1(3);
+    beta_n  = ((rho * G * R_pd * A_pd * p*(m+1))/(2*pi)) * cosd(theta_RS)^m * LED1(3);
     
     if plot_4
         for x_index = 1:length(K0_array)
@@ -723,7 +732,7 @@ if plot_6
             %par
             for j=1:length(y_probe)
                 PD_to_findx = [x_probe(i) y_probe(j) z_plot_index(k)];
-                [p1, p2, p3] = estimateReceiverPosition(LED, RIS1, RIS2, RIS3, RIS4, PD_to_findx,...
+                [p1, p2, p3] = estimateReceiverPosition(LED, LED1, LED2, LED3, LED4, PD_to_findx,...
                     p, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, R_pd, q_0, k_B, T_k, eta, I_2, ...
                     I_3, Gamma, g_m, I_bg, G_0, B, K_0, K_n);
                 if isnan(p1) || isnan(p2) || isnan(p3)
@@ -785,10 +794,10 @@ if plot_7
     figure(998);
     x1 = LED(1);
     y1 = LED(2);
-    x2 = RIS1(1);
-    y2 = RIS1(2);
-    x3 = RIS2(1);
-    y3 = RIS2(2);
+    x2 = LED1(1);
+    y2 = LED1(2);
+    x3 = LED2(1);
+    y3 = LED2(2);
     
     A =[...
         x2-x1, y2-y1; ...
@@ -801,13 +810,13 @@ if plot_7
             PD_to_findx = [x_probe(i) y_probe(j) 0];
             
             d_0 = calculateDistance(LED, PD_to_findx);
-            d_1 = calculateDistance(RIS1, PD_to_findx);
-            d_2 = calculateDistance(RIS2, PD_to_findx);
+            d_1 = calculateDistance(LED1, PD_to_findx);
+            d_2 = calculateDistance(LED2, PD_to_findx);
             
             if dynamic_epsilon_estimation
                 epsilon_0 = estimate_epsilon_0 (K_0, epsilon, LED, PD_to_findx, R_pd, p, q_0, k_B, T_k, eta, I_2, I_3, Gamma,g_m, I_bg, G_0, B, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of);
-                epsilon_1 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS1, p, Phi_FoV, a,rho, Psi, T_of, alpha, beta,  q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                epsilon_2 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS2, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                epsilon_1 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED1, p, Phi_FoV, a,rho, Psi, T_of, alpha, beta,  q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                epsilon_2 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED2, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
                 %epsilon_3 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS3, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
                 %epsilon_4 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS4, p, Phi_FoV, a, rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
             end
@@ -833,8 +842,8 @@ if plot_7
     plot(NaN, 'rx', 'LineWidth',3, 'MarkerSize', 25);
     
     plot3(LED(2),LED(1),max_error+0.1, 'ro', 'LineWidth', 3,'MarkerSize', 25 );
-    plot3(RIS1(1),RIS1(2),max_error+0.1, 'rx', 'LineWidth', 3, 'MarkerSize', 25 );
-    plot3(RIS2(1),RIS2(2),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
+    plot3(LED1(1),LED1(2),max_error+0.1, 'rx', 'LineWidth', 3, 'MarkerSize', 25 );
+    plot3(LED2(1),LED2(2),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
     surf (x_probe, y_probe, error_matrix', 'EdgeColor', 'None' );
     
     
@@ -855,10 +864,10 @@ if plot_7
     figure(999);
     
     x1 = LED(1);    y1 = LED(2);
-    x2 = RIS1(1);   y2 = RIS1(2);
-    x3 = RIS2(1);   y3 = RIS2(2);
-    x4 = RIS3(1);   y4 = RIS3(2);
-    x5 = RIS4(1);   y5 = RIS4(2);
+    x2 = LED1(1);   y2 = LED1(2);
+    x3 = LED2(1);   y3 = LED2(2);
+    x4 = LED3(1);   y4 = LED3(2);
+    x5 = LED4(1);   y5 = LED4(2);
     
     
     A =[...
@@ -874,18 +883,18 @@ if plot_7
             PD_to_findx = [x_probe(i) y_probe(j) 0];
             
             d_0 = calculateDistance(LED, PD_to_findx);
-            d_1 = calculateDistance(RIS1, PD_to_findx);
-            d_2 = calculateDistance(RIS2, PD_to_findx);
-            d_3 = calculateDistance(RIS3, PD_to_findx);
-            d_4 = calculateDistance(RIS4, PD_to_findx);
+            d_1 = calculateDistance(LED1, PD_to_findx);
+            d_2 = calculateDistance(LED2, PD_to_findx);
+            d_3 = calculateDistance(LED3, PD_to_findx);
+            d_4 = calculateDistance(LED4, PD_to_findx);
             
             
             if dynamic_epsilon_estimation
                 epsilon_0 = estimate_epsilon_0 (K_0, epsilon, LED, PD_to_findx, R_pd, p, q_0, k_B, T_k, eta, I_2, I_3, Gamma,g_m, I_bg, G_0, B, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of);
-                epsilon_1 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS1, p, Phi_FoV, a,rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                epsilon_2 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS2, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                epsilon_3 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS3, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                epsilon_4 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS4, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                epsilon_1 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED1, p, Phi_FoV, a,rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                epsilon_2 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED2, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                epsilon_3 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED3, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                epsilon_4 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED4, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
             end
             
             y_tilde = 0.5 * [...
@@ -909,10 +918,10 @@ if plot_7
     ylabel('y [m]');
     
     plot3(LED(2),LED(1), max_error+0.1, 'ro', 'LineWidth', 3,'MarkerSize', 25 );
-    plot3(RIS1(2),RIS1(1),max_error+0.1, 'rx', 'LineWidth', 3, 'MarkerSize', 25 );
-    plot3(RIS2(2),RIS2(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
-    plot3(RIS3(2),RIS3(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
-    plot3(RIS4(2),RIS4(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
+    plot3(LED1(2),LED1(1),max_error+0.1, 'rx', 'LineWidth', 3, 'MarkerSize', 25 );
+    plot3(LED2(2),LED2(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
+    plot3(LED3(2),LED3(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
+    plot3(LED4(2),LED4(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
     
     min_error = min([min_error min(error_matrix)]);
     max_error = max([max_error max(error_matrix)]);
