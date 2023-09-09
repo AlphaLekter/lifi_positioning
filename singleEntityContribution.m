@@ -31,6 +31,6 @@ impulseResponse = (((m+1)*A_pd * ((cosd(theta_SD)^m) * cosd(theta_SD) * T_of * G
 %         G = 0;
 %     end
 % 
-%     impulseResponse = ((rho*(m+1)*A_pd * (cosd(theta_RS)^m) * cosd(Phi_RD) * T_of * G)/ (2* pi * (d_RD+d_SR)^2)) ;
+%     impulseResponse = (((m+1) * A_pd * (cosd(theta_RS)^m) * cosd(Phi_RD) * T_of * G)/ (2* pi * (d_RD+d_SR)^2)) ;
 
 end

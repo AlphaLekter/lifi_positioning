@@ -10,7 +10,7 @@ rad = (((m+1)*h^(m+1)*A_pd*p)* T_of * G * R_pd)/ (2*pi*received_power);
 
 if rad > 0
     distance = nthroot(rad, degree);
-elseif rad > 0 && mod(N, 2) == 1
+elseif rad > 0 && mod(N, 2) == 1 % ??? Branch inutile?
     distance = nthroot(rad, degree);
 else
     distance = NaN;
