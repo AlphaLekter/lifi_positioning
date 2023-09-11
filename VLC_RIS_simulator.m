@@ -52,10 +52,10 @@ granularity = .05;          % plot accuracy
 number_of_samples = 100; % ??? Valori consigliati?
 % plot info
 Entity_enabled = [1 1 1 1]; % LED1 - LED2 - LED3 - LED4
-PLOT3D_enabled = 0;
-PLOT2D_enabled = 1;
-plot_1         = 1;
-plot_2         = 0;
+PLOT3D_enabled = 1;
+PLOT2D_enabled = 0;
+plot_1         = 0;
+plot_2         = 1;
 plot_3         = 0;
 plot_4         = 0;
 plot_5         = 0;
@@ -237,11 +237,11 @@ end
 %% noise contribution
 if plot_3
     shift_distance = 1; % meter
-    granularity = 0.01;
+    granularity = 0.01; % ??? è normale che usi una granularità diversa?
 
     x_probe = 0:granularity:x_max;
     y_probe = 0:granularity:y_max;
-    z_probe = 0:9*granularity:z_max;
+    z_probe = 0:9*granularity:z_max; % ??? Perché 9x ?
 
     x_len = length(x_probe);
     y_len = length(y_probe);
@@ -251,8 +251,6 @@ if plot_3
     marker_array = ["x", "o", "^", "p"];
     legend_array_led = ["\mu_0"];
     legend_array_led = [];
-    legend_array_ris = ["\Delta_n"];
-    legend_array_ris = [];
 
     for bandIdx = 1:length(B_array)
         B=B_array(bandIdx);
@@ -266,23 +264,17 @@ if plot_3
         n_thermal_LED_contribution = zeros(1, z_len);
         distance_LED = zeros(1,z_len);
 
-        received_power_NLoS = zeros(1, length(y_probe));
-        n_shoot_RIS1_contribution = zeros(1, length(y_probe));
-        n_thermal_RIS1_contribution = zeros(1, length(y_probe));
-        distance_RIS1 = zeros(1, length(y_probe));
-
         max_rnd = number_of_samples;
         posLEDError = NaN(z_len, max_rnd);
         % par
         for z_index = 1:(z_len)
-
             % only LoS contribution
             PDect_pos_LED = [LED1(1), LED1(2), LED1(3) - z_probe(z_index)];
-            received_power_LED(z_index) = R_pd*p*singleEntityContribution(LED1, 0, PDect_pos_LED, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
+            received_power_LED(z_index) = R_pd*p*singleEntityContribution(LED1, PDect_pos_LED, alpha, beta, Phi_FoV, a, Psi, A_pd, T_of); % Ampere
             distance_LED(z_index) = calculateDistance(LED1, PDect_pos_LED);
 
             for idx_rnd = 1:max_rnd
-                [ n_shoot_LED, n_thermal_LED, nsh_var, nth_var] = noiseEstimation(received_power_LED(z_index), q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                [n_shoot_LED, n_thermal_LED, nsh_var, nth_var] = noiseEstimation(received_power_LED(z_index), q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
                 n_shoot_LED_contribution(z_index) = nsh_var;
                 n_thermal_LED_contribution(z_index) = nth_var;
                 received_power_LED_w_noise = received_power_LED(z_index) + n_shoot_LED + n_thermal_LED;
@@ -294,54 +286,9 @@ if plot_3
                     posLEDError(z_index, idx_rnd) = abs(distance_LED(z_index) - dLED);
                 end
             end
-
         end
-
-        %posRISError = NaN(z_len, max_rnd);
-        posRISError = NaN(z_len, max_rnd);
-
-        for z_index = 1:z_len-2
-            if LED1(3)-z_probe(z_index) > 0
-                PDect_pos_RIS1 = [LED1(1), LED1(2)+y_probe(z_index), LED1(3)-z_probe(z_index)];
-                % LoS Contribution
-                received_power_LoS = R_pd*p*singleEntityContribution(LED1, 0, [LED1(1) LED1(2) LED1(3)-shift_distance], alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-                %distance_RIS1_LoS = calculateDistance(LED1, PDect_pos_RIS1);
-
-                % NLoS Contribution
-                received_power_NLoS(z_index) = R_pd*p*singleEntityContribution(LED1, LED1, PDect_pos_RIS1, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
-                distance_RIS1(z_index)=calculateDistance(LED1, PDect_pos_RIS1);
-
-                for idx_rnd = 1:max_rnd
-                    % noise due to LoS
-                    [n_shoot_LoS, n_thermal_LoS, nsh_var_LoS, nth_var_LoS] = ...
-                        noiseEstimation(received_power_LoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                    %n_shoot_LoS_contribution(z_index) = nsh_var_LoS;
-                    %n_thermal_LoS_contribution(z_index) = nth_var_LoS;
-
-                    % noise due to LoS+NLoS
-                    [n_shoot_RIS1, n_thermal_RIS1, nsh_var, nth_var] = ...
-                        noiseEstimation(received_power_LoS + received_power_NLoS(z_index), q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                    n_shoot_RIS1_contribution(z_index) = nsh_var_LoS + nsh_var;
-                    n_thermal_RIS1_contribution(z_index) = nth_var_LoS + nth_var;
-
-                    received_power_RIS1_w_noise  =  received_power_NLoS(z_index) + n_shoot_RIS1 + n_thermal_RIS1 + n_shoot_LoS + n_thermal_LoS;
-                    dRIS1 = getRISDistanceByEstimatedPower(LED1(3) - PDect_pos_RIS1(3), p, A_pd, received_power_RIS1_w_noise, Psi, T_of, Phi_FoV, a, rho, cosd(calculateAngle(LED1, LED1, 0, 0)), R_pd, calculateDistance(LED1, LED1));
-
-                    if isnan(dRIS1)
-                        posRISError(z_index, idx_rnd) = NaN;
-                    else
-                        posRISError(z_index, idx_rnd) = abs(distance_RIS1(z_index) - dRIS1);
-                    end
-                end
-
-            else
-                break;
-            end
-        end
-
-
+        
         %legend_array_led = [legend_array_led , "\sigma_s with B = "+string(B*1e-6)+" [MHz]", "\sigma_t with B = "+string(B*1e-6)+" [MHz]"];
-
 
         figure(100);
         %grid on;
@@ -361,48 +308,22 @@ if plot_3
             plot(NaN, 'kp', 'LineWidth',2, 'MarkerSize', 15,'MarkerFaceColor','k');
 
             plot(distance_LED,received_power_LED.^2,"b-", 'LineWidth',2);
-            legend_array_led = [legend_array_led , "LED", "IMR", "\mu_0^2 or \Delta_n^2", "\sigma^2", "B = 5 MHz", "B = 20 MHz", "B = 100 MHz", "B = 400 MHz"];
+            legend_array_led = [legend_array_led , "LED", "\mu_0^2 or \Delta_n^2", "\sigma^2", "B = 5 MHz", "B = 20 MHz", "B = 100 MHz", "B = 400 MHz"];
             legend(legend_array_led);
         end
         %plot(distance_LED,sqrt(n_shoot_LED_contribution), 'LineWidth',2);
         %plot(distance_LED,sqrt(n_thermal_LED_contribution), '-.', 'LineWidth',2);
         plot(distance_LED,(n_shoot_LED_contribution + n_thermal_LED_contribution), 'b--',...
-            'LineWidth',2, 'Marker', marker_array(bandIdx), 'MarkerSize', 15,'MarkerFaceColor','b', 'MarkerIndices', [2 1:12:145]);
+            'LineWidth', 2, 'Marker', marker_array(bandIdx), 'MarkerSize', 15,'MarkerFaceColor','b', 'MarkerIndices', [2 1:12:145]);
+        % TODO sistemare MarkerIndices
 
         %ylim([10e-25 10e-7]);
         %legend(legend_array_led);
         set(gca, 'YScale', 'log');
         set(gca, "FontName", "Times New Roman", "FontSize", 33);
-
-        %legend_array_ris = [legend_array_ris , "\sigma_s with B = "+string(B*1e-6)+" [MHz]", "\sigma_t B = "+string(B*1e-6)+" [MHz]"];
-        figure(100);
-        %grid on;
-        hold on;
-        %title("Noise estimation RIS1");
-        ylabel('Signal Power [Ampere^2]');
-        xlabel('Distance [m]');
-        if bandIdx == 1
-            plot(distance_RIS1,received_power_NLoS.^2,"r-", 'LineWidth',2);
-            %legend_array_ris = [legend_array_ris , "\sigma", "B = 5 MHz", "B = 20 MHz", "B = 100 MHz", "B = 400 MHz"];
-            %legend(legend_array_ris);
-        end
-        %plot(distance_RIS1,sqrt(n_shoot_RIS1_contribution), 'LineWidth',2);
-        %plot(distance_RIS1,sqrt(n_thermal_RIS1_contribution), '-.', 'LineWidth',2);
-        plot(distance_RIS1,n_shoot_RIS1_contribution + n_thermal_RIS1_contribution, 'r--',...
-            'LineWidth', 2, 'Marker', marker_array(bandIdx), 'MarkerSize', 15, 'MarkerFaceColor','r', 'MarkerIndices', [2 6:12:1301]);
-
-        hold off;
-        %ylim([10e-25 10e-7]);
-        %legend(["SIGNAL", "Shot", "Thermal"]);
-        %legend(legend_array_ris);
-        set(gca, 'YScale', 'log');
-        xlim([0 5]);
-        ylim([1e-18 1e-6]);
-        set(gca, "FontName", "Times New Roman", "FontSize", 33);
     end
 
-    %% grafico SNR al variare della potenza - Fig 1 A e B
-    % LED, RIS1
+    %% grafico SNR al variare della potenza
     figure(101);
     hold on;
     plot(NaN, 'b-', 'LineWidth',2, 'MarkerSize', 15,'MarkerFaceColor','k');
@@ -411,63 +332,31 @@ if plot_3
     plot(NaN, 'ko', 'LineWidth',2, 'MarkerSize', 15,'MarkerFaceColor','k');
     plot(NaN, 'k^', 'LineWidth',2, 'MarkerSize', 15,'MarkerFaceColor','k');
     plot(NaN, 'kp', 'LineWidth',2, 'MarkerSize', 15,'MarkerFaceColor','k');
-    legend(["LED", "IMR", "B = 5MHz", "B = 20MHz", "B = 100MHz", "B = 400MHz"]);
+    legend(["LED", "B = 5MHz", "B = 20MHz", "B = 100MHz", "B = 400MHz"]);
 
     for bandIdx = 1:length(B_array)
-
         B=B_array(bandIdx);
 
         received_power_LED = [];
         distance_LED = [];
-        received_power_NLoS = [];
-        distance_RIS1 = [];
-        lumen_array = [1:10:10000];
-
-
-
-
+        lumen_array = 1:10:10000;
+        
         for lumenIdx = 1: length(lumen_array)
             lumen_level = lumen_array(lumenIdx);
-            p = lumen_level / 683;      % transmission power 6000 [Lumens] -> [Watt]
+            p = lumen_level / 683; % transmission power 6000 [Lumens] -> [Watt]
 
-
-            PDect_pos_LED = [LED(1), LED(2), LED(3) - shift_distance];
-            received_power_LED(lumenIdx) = R_pd*p*singleEntityContribution(LED, 0, PDect_pos_LED, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-            distance_LED(lumenIdx) = calculateDistance(LED, PDect_pos_LED);
+            PDect_pos_LED = [LED1(1), LED1(2), LED1(3) - shift_distance];
+            received_power_LED(lumenIdx) = R_pd * p * singleEntityContribution(LED1, PDect_pos_LED, alpha, beta, Phi_FoV, a, Psi, A_pd, T_of); % Ampere
+            distance_LED(lumenIdx) = calculateDistance(LED1, PDect_pos_LED);
             [n_shoot_LED, n_thermal_LED, nsh_var_LED, nth_var_LED] = noiseEstimation(received_power_LED(lumenIdx), q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
 
-            SNR_LED(lumenIdx) = 10* log10(received_power_LED(lumenIdx).^2 / (nsh_var_LED+nth_var_LED));
-
-
-            PDect_pos_RIS1 = [LED1(1),LED1(2), LED1(3) - shift_distance];
-            received_power_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect_pos_LED, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-            %distance_RIS1_LoS = calculateDistance(LED, PDect_pos_RIS1);
-            % NLoS Contribution
-            received_power_NLoS(lumenIdx) = R_pd*p*singleEntityContribution(LED, LED1, PDect_pos_RIS1, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
-            distance_RIS1(lumenIdx)=calculateDistance(LED1, PDect_pos_RIS1);
-            [n_shoot_LoS, n_thermal_LoS, nsh_var_LoS, nth_var_LoS] = ...
-                noiseEstimation(received_power_LoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-            %n_shoot_LoS_contribution(z_index) = nsh_var_LoS;
-            %n_thermal_LoS_contribution(z_index) = nth_var_LoS;
-
-            % noise due to LoS+NLoS
-            [n_shoot_RIS1, n_thermal_RIS1, nsh_var, nth_var] = ...
-                noiseEstimation(received_power_LoS + received_power_NLoS(lumenIdx), q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-            n_shoot_RIS1_contribution(lumenIdx) = nsh_var_LoS + nsh_var;
-            n_thermal_RIS1_contribution(lumenIdx) = nth_var_LoS + nth_var;
-
-
-            SNR_RIS(lumenIdx) = 10* log10(received_power_NLoS(lumenIdx).^2 / (n_shoot_RIS1_contribution(lumenIdx)  + n_thermal_RIS1_contribution(lumenIdx)));
-
+            SNR_LED(lumenIdx) = 10 * log10(received_power_LED(lumenIdx).^2 / (nsh_var_LED+nth_var_LED));
         end
 
         plot(lumen_array, SNR_LED, 'b--', 'Marker', marker_array(bandIdx), 'MarkerIndices', 1:100:1000, 'MarkerSize', 15, 'MarkerFaceColor','b');
-
-        plot(lumen_array, SNR_RIS, 'r-.', 'Marker', marker_array(bandIdx), 'MarkerIndices', 1:100:1000, 'MarkerSize', 15, 'MarkerFaceColor','r');
         ylabel('SNR [dB]');
         xlabel('Optical Power [Lumen]');
     end
-
 
     set(gca, "FontName", "Times New Roman", "FontSize", 39);
 
