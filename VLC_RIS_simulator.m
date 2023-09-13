@@ -9,7 +9,6 @@ clc; clear; close all;
 
 %% parameters setting
 Psi     = 70;               % LED half-power semiangle [degree]
-% rho     = 0.95;             % Reflection coefficient (da ignorare)
 % A_pd    = 1e-04;            % 1cm^2 - Physical area of the PD [m^2]  %  [C2022]
 A_pd    = 0.2e-04;          % Physical area of the PD [m^2]
 T_of    = 1;                % Optical Filter Gain
@@ -27,7 +26,7 @@ p = lumen_level / 683;      % transmission power 6000 [Lumens] -> [Watt]
 % noise parameter
 q_0     = 1.602e-19;        % electronic charge [Coulombs]
 I_bg    = 84e-6;            % background light current [A] -> 84 [µA]
-%I_bg    = 5e-12;           % 5pA
+% I_bg    = 5e-12;           % 5pA
 k_B     = 1.38064852e-23;   % Boltzmann constant [Joule/Kelvin]
 T_k     = 295;              % absolute temperature [K]
 G_0     = 10;               % open-loop voltage gain
@@ -42,20 +41,15 @@ x_max       = 5;            % room size x-axis         % [SCA+2022]
 y_max       = 5;            % room size y-axis         % [SCA+2022]
 z_max       = 3;            % room size z-axis         % 3 in [SCA+2022]
 
-% room size
-%  x_max       = 7;            % room size x-axis         % [SCA+2022]
-%  y_max       = 7;            % room size y-axis         % [SCA+2022]
-%  z_max       = 5;            % room size z-axis         % 3 in [SCA+2022]
-
 granularity = .05;          % plot accuracy
 
 number_of_samples = 100; % ??? Valori consigliati?
 % plot info
 Entity_enabled = [1 1 1 1]; % LED1 - LED2 - LED3 - LED4
-PLOT3D_enabled = 1;
-PLOT2D_enabled = 0;
+PLOT3D_enabled = 0;
+PLOT2D_enabled = 1;
 plot_1         = 0;
-plot_2         = 1;
+plot_2         = 0;
 plot_3         = 0;
 plot_4         = 0;
 plot_5         = 0;
@@ -68,7 +62,6 @@ alpha   = 0;
 beta    = 0;
 
 %% set entities position
-
 LED1 = [x_max/4      , y_max/4       , z_max];
 LED2 = [x_max/4      , y_max*3/4     , z_max];
 LED3 = [x_max*3/4    , y_max/4       , z_max];
@@ -84,10 +77,6 @@ y_len = length(y_probe);
 z_len = length(z_probe);
 
 matrix_size = [x_len, y_len, z_len];
-distance_error_check = struct();
-
-% ??? faccio un distance_error_check per ogni LED?
-distance_error_check.LED1 = struct();
 
 impulseMatrix  = zeros(matrix_size);
 overlap_info   = zeros(matrix_size);
@@ -148,6 +137,7 @@ if plot_2
             ylabel('X');
             title('Z = '+string((z_probe(floor(plot_index(i)))))+' m');
         end
+
         colormap(jet(126));
         sgtitle('Z-sliced - Room size ' + string(x_max) +'x' + string(y_max)+'x'+string(z_max) +' meters');
 
@@ -168,6 +158,7 @@ if plot_2
             ylabel('X');
             title('Y = '+string((y_probe(floor(plot_index(i)))))+' m el:'+plot_index(i));
         end
+
         colormap(jet(126));
         sgtitle('Y-sliced - Room size ' + string(x_max) +'x' + string(y_max)+'x'+string(z_max) +' meters');
 
@@ -212,7 +203,6 @@ if plot_2
 
         sgtitle('Overlapping MAP Z-sliced | Room size: ' + ...
             string(x_max) + 'x' + string(y_max)+'x'+string(z_max) +' meters');
-
     end
 end
 
@@ -237,7 +227,7 @@ end
 %% noise contribution
 if plot_3
     shift_distance = 1; % meter
-    granularity = 0.01; % ??? è normale che usi una granularità diversa?
+    granularity = 0.01; % ??? perché una granularità diversa?
 
     x_probe = 0:granularity:x_max;
     y_probe = 0:granularity:y_max;
@@ -268,6 +258,7 @@ if plot_3
         posLEDError = NaN(z_len, max_rnd);
         % par
         for z_index = 1:(z_len)
+            % ??? Come farlo considerando tutti i LED?
             % only LoS contribution
             PDect_pos_LED = [LED1(1), LED1(2), LED1(3) - z_probe(z_index)];
             received_power_LED(z_index) = R_pd*p*singleEntityContribution(LED1, PDect_pos_LED, alpha, beta, Phi_FoV, a, Psi, A_pd, T_of); % Ampere
@@ -296,6 +287,7 @@ if plot_3
         %title("Noise estimation LED1");
         ylabel('Signal Power [Ampere^2]');
         xlabel('Distance [m]');
+
         if bandIdx == 1
             %marker_array = ["x", "o", "^", "p"];
             plot(NaN, 'b-', 'LineWidth',2, 'MarkerSize', 15,'MarkerFaceColor','k');
@@ -311,14 +303,15 @@ if plot_3
             legend_array_led = [legend_array_led , "LED", "\mu_0^2 or \Delta_n^2", "\sigma^2", "B = 5 MHz", "B = 20 MHz", "B = 100 MHz", "B = 400 MHz"];
             legend(legend_array_led);
         end
-        %plot(distance_LED,sqrt(n_shoot_LED_contribution), 'LineWidth',2);
-        %plot(distance_LED,sqrt(n_thermal_LED_contribution), '-.', 'LineWidth',2);
+
+        % plot(distance_LED,sqrt(n_shoot_LED_contribution), 'LineWidth',2);
+        % plot(distance_LED,sqrt(n_thermal_LED_contribution), '-.', 'LineWidth',2);
         plot(distance_LED,(n_shoot_LED_contribution + n_thermal_LED_contribution), 'b--',...
             'LineWidth', 2, 'Marker', marker_array(bandIdx), 'MarkerSize', 15,'MarkerFaceColor','b', 'MarkerIndices', [2 1:12:145]);
         % TODO sistemare MarkerIndices
 
-        %ylim([10e-25 10e-7]);
-        %legend(legend_array_led);
+        % ylim([10e-25 10e-7]);
+        % legend(legend_array_led);
         set(gca, 'YScale', 'log');
         set(gca, "FontName", "Times New Roman", "FontSize", 33);
     end
@@ -357,37 +350,27 @@ if plot_3
         ylabel('SNR [dB]');
         xlabel('Optical Power [Lumen]');
     end
-
+    
     set(gca, "FontName", "Times New Roman", "FontSize", 39);
-
+    
     %% boxplot per errore medio
-    %     figure(102);
-    %     grid on;
-    %     hold on;
-    %     title("BoxPlot Error LED");
-    %     xlabel('Distanza [m]');
-    %     ylabel('Errore distanza [m]');
-    %
-    %     boxchart(posLEDError', 'MarkerStyle','none');
-    %     %ylim([0 max(max(posLEDError))]);
-    %     ylim([0 y_max/6]);
-    %     ax = gca;
-    %     %ax.YAxis.Scale ="log";
-    %
-    %     figure();
-    %     grid on;
-    %     hold on;
-    %     title("BoxPlot Error RIS1");
-    %     xlabel('Distanza [m]');
-    %     ylabel('Errore distanza [m]');
-    %     boxchart(posRISError', 'MarkerStyle','none');
-    %     ylim([0 y_max/2]);
-    %     ax = gca;
-    toc;
+    figure(102);
+    grid on;
+    hold on;
+    title("BoxPlot Error LED");
+    xlabel('Distanza [m]');
+    ylabel('Errore distanza [m]');
 
+    boxchart(posLEDError', 'MarkerStyle','none');
+    % ylim([0 max(max(posLEDError))]);
+    ylim([0 y_max/6]);
+    ax = gca;
+    % ax.YAxis.Scale ="log";
+
+    toc;
 end
 
-%% Fig 2 epsilon n al variare di qualcosa
+%% Epsilon n al variare di qualcosa
 if plot_5
     m = -(log(2)/log(cosd(Psi)));
     G = (a^2)/((sind(Phi_FoV)^2));
@@ -406,93 +389,53 @@ if plot_5
                 %for z_index = 1:z_len
                 PDect = [x_probe(x_index), y_probe(y_index),0];
 
-                p_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-                p_NLoS = R_pd*p*singleEntityContribution(LED, LED1, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
-
-                theta_RS = calculateAngle(LED, LED1, alpha, beta);
-                r_n = calculateDistance(LED, LED1);
+                p_LoS = R_pd*p*singleEntityContribution(LED1, PDect, alpha, beta, Phi_FoV, a, Psi, A_pd, T_of); % Ampere
+                
+                theta_RS = calculateAngle(LED1, PDect, alpha, beta);
                 d_n = calculateDistance(LED1, PDect);
-
+                
                 %TODO
-
+                
                 [~, ~, nsh_var_LoS, nth_var_LoS] = ...
                     noiseEstimation(p_LoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-
-                [~, ~, nsh_var_NLoS, nth_var_NLoS] = ...
-                    noiseEstimation(p_LoS + p_NLoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-
+                
                 sigma_0 = sqrt(nsh_var_LoS + nth_var_LoS);
-                sigma_n = sqrt(nsh_var_NLoS + nth_var_NLoS);
-
-                beta_n  = ((rho * G * R_pd * A_pd * p*(m+1))/(2*pi)) * cosd(theta_RS)^m * LED1(3);
-
                 delta_0 = sqrt((2/K_0) * sigma_0^2 * erfinv(1-epsilon)^2);
-
                 delta_0_tresh = sqrt(2*sigma_0^2 * erfinv(1-epsilon));
-
+                
                 if delta_0 > delta_0_tresh
                     error('ERRORE: delta_0 > delta_0_tresh')
                 end
-
-                delta_n = sqrt((2/K_n)*(sigma_n * erfinv(1-epsilon))^2 + delta_0^2);
-
-                %             delta_n_tresh;
-                %
-                %             if delta_n > delta_n_tresh
-                %                 error('delta_n > delta_n_tresh')
-                %             end
-
-
-                if beta_n < (delta_n*(r_n + d_n)^2 * d_n)
-                    error('ERRORE: beta_n < (delta_n*(r_n + d_n)^2 * d_n)')
-                end
-
-                gamma_n = ((r_n+d_n)^2 * d_n * beta_n)/(beta_n - (delta_n*(r_n + d_n)^2 * d_n));
-                alpha_n = gamma_n;
-                %
-                %             a = r_n;
-                %             A = gamma_n;
-                %             b = d_n;
-                %             epsilon_n = (1/3) * ((3 * sqrt(3) * sqrt(4 * a^3 * A + 27 * A^2) + 2 * a^3 + 27 * A)^(1/3) / (2^(1/3)) + (2^(1/3) * a^2) / ((3 * sqrt(3) * sqrt(4 * a^3 * A + 27 * A^2) + 2 * a^3 + 27 * A)^(1/3)) - 2 * a - 3 * b);
-
-                rad = 1 / (sqrt((27 * r_n^3 * alpha_n) + (729/4)*alpha_n^2) + r_n^3 + (27/2)*alpha_n);
-                tao_n = nthroot(rad,3);
-                d_est_n = (tao_n/3) * (r_n - (1/tao_n))^2;
-                epsilon_n = d_est_n - d_n;
-                epsilon_n_representation(x_index, y_index) = epsilon_n;
-
-                d_0 = calculateDistance(LED, PDect);
+                
+                d_0 = calculateDistance(LED1, PDect);
                 rad_0 = (p_LoS)/(p_LoS-delta_0);
                 sol_rad = nthroot(rad_0,m+3);
                 epsilon_0 = d_0 * (sol_rad - 1);
 
                 epsilon_0_representation(x_index, y_index) = epsilon_0;
-
-
-
-
                 %end
             end
         end
-
-
     end
+
+    % ??? A cosa serve questa serie di grafici (89-93)?
     figure(89);
-    h = surf(x_probe, y_probe, epsilon_0_representation', 'EdgeColor', 'None');
+    surf(x_probe, y_probe, epsilon_0_representation', 'EdgeColor', 'None');
     %rotate(h, [0 1 0], 90);
     ylabel('X');
     xlabel('Y');
     hold on;
-    plot(LED(2),LED(1), 'o', 'MarkerSize', 25 );
-
+    plot(LED1(2), LED1(1), 'o', 'MarkerSize', 25);
+    plot(LED2(2), LED2(1), 'o', 'MarkerSize', 25);
+    plot(LED3(2), LED3(1), 'o', 'MarkerSize', 25);
+    plot(LED4(2), LED4(1), 'o', 'MarkerSize', 25);
 
     figure(90);
     surf(y_probe, x_probe, epsilon_n_representation);
     ylabel('X');
     xlabel('Y');
     hold on;
-    plot(LED1(2),LED1(1), 'x', 'MarkerSize', 25 );
-    plot(LED(2),LED(1), 'o', 'MarkerSize', 25 );
+    plot(LED1(2),LED1(1), 'o', 'MarkerSize', 25 );
 
     figure(91);
     [C, h] = contour(x_probe, y_probe, epsilon_n_representation',[0.01 0.02 0.03 0.04 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.5],"ShowText",true, 'LineWidth', 3);
@@ -503,24 +446,16 @@ if plot_5
     % plot(RIS1(2),RIS1(1), 'x', 'MarkerSize', 25 );
     % plot(LED(2),LED(1), 'o', 'MarkerSize', 25 );
 
-
     set(gca, "FontName", "Times New Roman", "FontSize", 39);
-
-
-    %%
+    
     K0_array = 1:1000;
     Kn_array = 1:1000;
 
     epsilon_n_representation= nan(x_len, y_len);
     PDect = [x_max/2, y_max/2, 0];
 
-    p_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-
-    p_NLoS = R_pd*p*singleEntityContribution(LED, LED1, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
-
-    theta_RS = calculateAngle(LED, LED1, alpha, beta);
-
-    r_n = calculateDistance(LED, LED1);
+    p_LoS = R_pd * p * singleEntityContribution(LED1, PDect, alpha, beta, Phi_FoV, a, Psi, A_pd, T_of); % Ampere
+    theta_RS = calculateAngle(LED1, PDect, alpha, beta);
     d_n = calculateDistance(LED1, PDect);
 
     %TODO
@@ -528,13 +463,7 @@ if plot_5
     [n_shoot_LoS, n_thermal_LoS, nsh_var_LoS, nth_var_LoS] = ...
         noiseEstimation(p_LoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
 
-    [n_shoot_RIS1, n_thermal_RIS1, nsh_var_NLoS, nth_var_NLoS] = ...
-        noiseEstimation(p_LoS + p_NLoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-
     sigma_0 = sqrt(nsh_var_LoS + nth_var_LoS);
-    sigma_n = sqrt(nsh_var_NLoS + nth_var_NLoS);
-
-    beta_n  = ((rho * G * R_pd * A_pd * p*(m+1))/(2*pi)) * cosd(theta_RS)^m * LED1(3);
 
     if plot_4
         for x_index = 1:length(K0_array)
@@ -544,42 +473,17 @@ if plot_5
                 K_0 = K0_array(x_index);
                 K_n = Kn_array(y_index);
 
-
                 delta_0 = sqrt((2/K_0) * sigma_0^2 * erfinv(1-epsilon)^2);
-
                 delta_0_tresh = sqrt(2*sigma_0^2 * erfinv(1-epsilon));
-
-                delta_n = sqrt((2/K_n)*(sigma_n * erfinv(1-epsilon))^2 + delta_0^2);
-
-                gamma_n = ((r_n+d_n)^2 * d_n * beta_n)/(beta_n - (delta_n*(r_n + d_n)^2 * d_n));
-                alpha_n = gamma_n;
-                %
-                %             a = r_n;
-                %             A = gamma_n;
-                %             b = d_n;
-                %             epsilon_n = (1/3) * ((3 * sqrt(3) * sqrt(4 * a^3 * A + 27 * A^2) + 2 * a^3 + 27 * A)^(1/3) / (2^(1/3)) + (2^(1/3) * a^2) / ((3 * sqrt(3) * sqrt(4 * a^3 * A + 27 * A^2) + 2 * a^3 + 27 * A)^(1/3)) - 2 * a - 3 * b);
-
-                rad = 1 / (sqrt((27 * r_n^3 * alpha_n) + (729/4)*alpha_n^2) + r_n^3 + (27/2)*alpha_n);
-                tao_n = nthroot(rad,3);
-                d_est_n = (tao_n/3) * (r_n - (1/tao_n))^2;
-                epsilon_n = d_est_n - d_n;
-
-                if epsilon_n > 0
-                    epsilon_n_representation(x_index, y_index) = epsilon_n;
-                else
-                    epsilon_n_representation(x_index, y_index) = nan;
-                end
-
-
+                
                 %end
             end
         end
-
-
     end
+
     figure(92);
-    surf(Kn_array, K0_array, epsilon_n_representation);
-    %surf(epsilon_n_representation, 'EdgeColor', 'None');
+    % surf(Kn_array, K0_array, epsilon_n_representation);
+    surf(epsilon_n_representation, 'EdgeColor', 'None');
     figure(93);
     [C,h]  = contour(epsilon_n_representation, [0.01 0.15 0.02 0.25 0.030 0.04 0.05 0.07 0.1 0.12 0.15 0.2 0.25] ,"ShowText",true, 'LineWidth', 3);
     clabel(C,h, 'FontSize', 30);
@@ -592,14 +496,14 @@ if plot_5
 
     set(gca, "FontName", "Times New Roman", "FontSize", 39);
 end
-%% estimate position
 
+%% estimate position
 pause(0.01);
 fprintf("Starting to minimizing position error...\n");
 tic
 %     lumen_level = 1000;
-%     p = lumen_level / 683;      % transmission power 6000 [Lumens] -> [Watt]
-%     B       = 100e6;             % System bandwidth [Hz]
+%     p = lumen_level / 683;  % transmission power 6000 [Lumens] -> [Watt]
+%     B = 100e6;              % System bandwidth [Hz]
 
 number_of_plot_needed = 1;
 
@@ -611,13 +515,12 @@ if plot_6
 
     %number_of_plot_needed = 18;
     z_plot_index = linspace(0, max(z_probe), number_of_plot_needed);
-    z_plot_index = 0;
+    % z_plot_index = 0;
     colorbar;
-
+    
     %for k = 1:length(z_probe)
     %fprintf("Sample n: %d", number_of_samples);
-
-
+    
     for k=1:number_of_plot_needed
         error_matrix = zeros(length(x_probe), length(y_probe));
 
@@ -625,8 +528,8 @@ if plot_6
             %par
             for j=1:length(y_probe)
                 PD_to_findx = [x_probe(i) y_probe(j) z_plot_index(k)];
-                [p1, p2, p3] = estimateReceiverPosition(LED, LED1, LED2, LED3, LED4, PD_to_findx,...
-                    p, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, R_pd, q_0, k_B, T_k, eta, I_2, ...
+                [p1, p2, p3] = estimateReceiverPosition(LED1, LED2, LED3, LED4, PD_to_findx,...
+                    p, alpha, beta, Phi_FoV, a, Psi, A_pd, T_of, R_pd, q_0, k_B, T_k, eta, I_2, ...
                     I_3, Gamma, g_m, I_bg, G_0, B, K_0, K_n);
                 if isnan(p1) || isnan(p2) || isnan(p3)
                     error_matrix(i,j) = NaN;
@@ -635,6 +538,7 @@ if plot_6
                 end
             end
         end
+
         %subplot(3,3,k);
         %subplot(number_of_plot_needed/3, 3, k);
         %figure(200);
@@ -645,13 +549,12 @@ if plot_6
         colormap;
         xlabel('Y');
         ylabel('X');
-
+        
         error_matrix_vec = error_matrix(:);
         nanIdx = isnan(error_matrix_vec);
         infIdx = isinf(error_matrix_vec);
         error_matrix_vec = error_matrix_vec(~nanIdx & ~infIdx);
-
-
+        
         if isempty(error_matrix_vec(~isnan(error_matrix_vec) | error_matrix_vec ~= Inf))
             mean_error_string = "...";
         else
@@ -659,30 +562,25 @@ if plot_6
         end
 
         title('Z = '+string((z_plot_index(k)))+' [m] - mean ' + mean_error_string);
-
     end
-    sgtitle('Z-sliced - Room size ' + string(x_max) +'x' + string(y_max)+'x'+string(z_max) +' [m]');
 
+    sgtitle('Position error Z-sliced - Room size ' + string(x_max) +'x' + string(y_max)+'x'+string(z_max) +' [m]');
 end
 
-
-
 %% errore di posizionamento con 3 entità
+% ??? Serve questo?
 if plot_7
     dynamic_epsilon_estimation = 1;
     epsilon = 0.001;
     K_0 = 50;
     K_n = 2*K_0;
-
-
+    
     % scelta epsilon
-
-    %     epsilon_0 = 0.3;
-    %     epsilon_1 = 0.3;
-    %     epsilon_2 = 0.3;
-    %     epsilon_3 = 0.3;
-    %     epsilon_4 = 0.3;
-    %
+    % epsilon_0 = 0.3;
+    % epsilon_1 = 0.3;
+    % epsilon_2 = 0.3;
+    % epsilon_3 = 0.3;
+    % epsilon_4 = 0.3;
 
     figure(998);
     x1 = LED(1);
@@ -707,53 +605,51 @@ if plot_7
             d_2 = calculateDistance(LED2, PD_to_findx);
 
             if dynamic_epsilon_estimation
-                epsilon_0 = estimate_epsilon_0 (K_0, epsilon, LED, PD_to_findx, R_pd, p, q_0, k_B, T_k, eta, I_2, I_3, Gamma,g_m, I_bg, G_0, B, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of);
-                epsilon_1 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED1, p, Phi_FoV, a,rho, Psi, T_of, alpha, beta,  q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                epsilon_2 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED2, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                %epsilon_3 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS3, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-                %epsilon_4 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, RIS4, p, Phi_FoV, a, rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                epsilon_0 = estimate_epsilon_0(K_0, epsilon, LED, PD_to_findx, R_pd, p, q_0, k_B, T_k, eta, I_2, I_3, Gamma,g_m, I_bg, G_0, B, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of);
+                epsilon_1 = estimate_epsilon_n(K_0, K_n, epsilon, LED, PD_to_findx, LED1, p, Phi_FoV, a, rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                epsilon_2 = estimate_epsilon_n(K_0, K_n, epsilon, LED, PD_to_findx, LED2, p, Phi_FoV, a, rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                % epsilon_3 = estimate_epsilon_n(K_0, K_n, epsilon, LED, PD_to_findx, RIS3, p, Phi_FoV, a, rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+                % epsilon_4 = estimate_epsilon_n(K_0, K_n, epsilon, LED, PD_to_findx, RIS4, p, Phi_FoV, a, rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
             end
 
-            y_tilde = 0.5 * [...
-                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_1*(epsilon_1+2*d_1);...
-                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_2*(epsilon_2+2*d_2);...
-                ];
+            y_tilde = 0.5 * [
+                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_1*(epsilon_1+2*d_1);
+                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_2*(epsilon_2+2*d_2);
+            ];
+
             error_vector = pinv(A)* y_tilde;
             error_matrix(i,j) = sqrt(error_vector(1)^2 + error_vector(2)^2);
-
         end
     end
-
+    
     % error_matrix(length(x_probe)-5, length(y_probe)-6) = 0.0;
-
+    
     hold on;
-
+    
     min_error = min(min(error_matrix));
     max_error = max(max(error_matrix));
-
+    
     plot(NaN, 'ro', 'LineWidth',3, 'MarkerSize', 25);
     plot(NaN, 'rx', 'LineWidth',3, 'MarkerSize', 25);
-
+    
     plot3(LED(2),LED(1),max_error+0.1, 'ro', 'LineWidth', 3,'MarkerSize', 25 );
     plot3(LED1(1),LED1(2),max_error+0.1, 'rx', 'LineWidth', 3, 'MarkerSize', 25 );
     plot3(LED2(1),LED2(2),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
     surf (x_probe, y_probe, error_matrix', 'EdgeColor', 'None' );
-
-
+    
     cb = colorbar;
     cb.Label.String = "RMSE";
     cb.Label.Rotation = 270;
     cb.Label.VerticalAlignment = "bottom";
-
+    
     xlabel('x [m]');
     ylabel('y [m]');
-    caxis([0 0.25]);
+    clim([0 0.25]);
     xlim([0 x_max]);
     ylim([0 y_max]);
     set(gca, "FontName", "Times New Roman", "FontSize", 39);
-
+    
     %% errore di posizionamento con 5 entità
-
     figure(999);
 
     x1 = LED(1);    y1 = LED(2);
@@ -762,13 +658,12 @@ if plot_7
     x4 = LED3(1);   y4 = LED3(2);
     x5 = LED4(1);   y5 = LED4(2);
 
-
-    A =[...
-        x2-x1, y2-y1; ...
-        x3-x1, y3-y1; ...
-        x4-x1, y4-y1; ...
-        x5-x1, y5-y1; ...
-        ];
+    A = [
+        x2-x1, y2-y1;
+        x3-x1, y3-y1;
+        x4-x1, y4-y1;
+        x5-x1, y5-y1;
+    ];
 
     for i=1:length(x_probe)
         %par
@@ -781,7 +676,6 @@ if plot_7
             d_3 = calculateDistance(LED3, PD_to_findx);
             d_4 = calculateDistance(LED4, PD_to_findx);
 
-
             if dynamic_epsilon_estimation
                 epsilon_0 = estimate_epsilon_0 (K_0, epsilon, LED, PD_to_findx, R_pd, p, q_0, k_B, T_k, eta, I_2, I_3, Gamma,g_m, I_bg, G_0, B, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of);
                 epsilon_1 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED1, p, Phi_FoV, a,rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
@@ -789,50 +683,52 @@ if plot_7
                 epsilon_3 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED3, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
                 epsilon_4 = estimate_epsilon_n(K_0, K_n, epsilon,LED, PD_to_findx, LED4, p, Phi_FoV, a, rho,Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
             end
+            
+            y_tilde = 0.5 * [
+                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_1*(epsilon_1+2*d_1);
+                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_2*(epsilon_2+2*d_2);
+                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_3*(epsilon_3+2*d_3);
+                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_4*(epsilon_4+2*d_4);
+            ];
 
-            y_tilde = 0.5 * [...
-                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_1*(epsilon_1+2*d_1);...
-                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_2*(epsilon_2+2*d_2);...
-                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_3*(epsilon_3+2*d_3);...
-                epsilon_0*(epsilon_0 + 2*d_0) - epsilon_4*(epsilon_4+2*d_4);...
-                ];
             error_vector = pinv(A)* y_tilde;
             error_matrix(i,j) = sqrt(error_vector(1)^2 + error_vector(2)^2);
         end
     end
+
     %[C,h] = contour(y_probe, x_probe, error_matrix ,"ShowText",true, 'LineWidth', 3);
     %clabel(C,h, 'FontSize', 30);
     hold on;
     plot(NaN, 'ro', 'LineWidth',3, 'MarkerSize', 25);
     plot(NaN, 'rx', 'LineWidth',3, 'MarkerSize', 25);
     surf(x_probe, y_probe, error_matrix', 'EdgeColor', 'None');
-
+    
     xlabel('x [m]');
     ylabel('y [m]');
-
+    
     plot3(LED(2),LED(1), max_error+0.1, 'ro', 'LineWidth', 3,'MarkerSize', 25 );
     plot3(LED1(2),LED1(1),max_error+0.1, 'rx', 'LineWidth', 3, 'MarkerSize', 25 );
     plot3(LED2(2),LED2(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
     plot3(LED3(2),LED3(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
     plot3(LED4(2),LED4(1),max_error+0.1, 'rx','LineWidth', 3, 'MarkerSize', 25 );
-
+    
     min_error = min([min_error min(error_matrix)]);
     max_error = max([max_error max(error_matrix)]);
-
+    
     %%%%%%%%%%%%%%%%%
     % min_error = max([min_error min(error_matrix)]);
     % max_error = min([max_error max(error_matrix)]);
     %%%%%%%%%%%%%%%%%
-
+    
     caxis([min_error max_error-0.2]);
     legend('LED', 'IMR');
-
+    
     cb = colorbar;
     cb.Label.String = "RMSE";
     cb.Label.Rotation = 270;
     cb.Label.VerticalAlignment = "bottom";
     set(gca, "FontName", "Times New Roman", "FontSize", 39);
-
+    
     figure(998);
     xlim([0 x_max]);
     ylim([0 y_max]);
@@ -840,79 +736,69 @@ if plot_7
     legend('LED', 'IMR');
 end
 
-
+% ??? Serve ancora? Cos'è epsilon?
 function epsilon_n = estimate_epsilon_n(K_0, K_n, epsilon, LED, PDect, RIS, p, Phi_FoV, a, rho, Psi, T_of, alpha, beta, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B)
-m = -(log(2)/log(cosd(Psi)));
-
-p_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-
-p_NLoS = R_pd*p*singleEntityContribution(LED, RIS, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 0);
-
-theta_RS = calculateAngle(LED, RIS, alpha, beta);
-
-r_n = calculateDistance(LED, RIS);
-d_n = calculateDistance(RIS, PDect);
-
-theta_SD = calculateAngle(RIS, PDect, alpha, beta);
-if theta_SD >= 0 && theta_SD <= Phi_FoV
-    G = (a^2)/((sind(Phi_FoV)^2));
-else
-    G = 0;
+    m = -(log(2)/log(cosd(Psi)));
+    
+    p_LoS = R_pd*p*singleEntityContribution(LED, PDect, alpha, beta, Phi_FoV, a, Psi, A_pd, T_of); % Ampere
+    
+    theta_RS = calculateAngle(LED, RIS, alpha, beta);
+    
+    r_n = calculateDistance(LED, RIS);
+    d_n = calculateDistance(RIS, PDect);
+    
+    theta_SD = calculateAngle(RIS, PDect, alpha, beta);
+    if theta_SD >= 0 && theta_SD <= Phi_FoV
+        G = (a^2)/((sind(Phi_FoV)^2));
+    else
+        G = 0;
+    end
+    
+    sigma_0 = sqrt(nsh_var_LoS + nth_var_LoS);
+    sigma_n = sqrt(nsh_var_NLoS + nth_var_NLoS);
+    
+    beta_n  = ((rho * G * R_pd * A_pd * p*(m+1))/(2*pi)) * cosd(theta_RS)^m * RIS(3);
+    
+    delta_0 = sqrt((2/K_0) * sigma_0^2 * erfinv(1-epsilon)^2);
+    
+    delta_0_tresh = sqrt(2*sigma_0^2 * erfinv(1-epsilon));
+    
+    delta_n = sqrt((2/K_n)*(sigma_n * erfinv(1-epsilon))^2 + delta_0^2);
+    
+    gamma_n = ((r_n+d_n)^2 * d_n * beta_n)/(beta_n - (delta_n*(r_n + d_n)^2 * d_n));
+    alpha_n = gamma_n;
+    %
+    %             a = r_n;
+    %             A = gamma_n;
+    %             b = d_n;
+    %             epsilon_n = (1/3) * ((3 * sqrt(3) * sqrt(4 * a^3 * A + 27 * A^2) + 2 * a^3 + 27 * A)^(1/3) / (2^(1/3)) + (2^(1/3) * a^2) / ((3 * sqrt(3) * sqrt(4 * a^3 * A + 27 * A^2) + 2 * a^3 + 27 * A)^(1/3)) - 2 * a - 3 * b);
+    
+    rad = 1 / (sqrt((27 * r_n^3 * alpha_n) + (729/4)*alpha_n^2) + r_n^3 + (27/2)*alpha_n);
+    tao_n = nthroot(rad,3);
+    d_est_n = (tao_n/3) * (r_n - (1/tao_n))^2;
+    
+    epsilon_n = d_est_n - d_n;
+    
+    if epsilon_n > 0
+        epsilon_n = epsilon_n;
+    else
+        epsilon_n = nan;
+    end
 end
-
-
-[n_shoot_LoS, n_thermal_LoS, nsh_var_LoS, nth_var_LoS] = ...
-    noiseEstimation(p_LoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-
-[n_shoot_RIS1, n_thermal_RIS1, nsh_var_NLoS, nth_var_NLoS] = ...
-    noiseEstimation(p_LoS + p_NLoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-
-sigma_0 = sqrt(nsh_var_LoS + nth_var_LoS);
-sigma_n = sqrt(nsh_var_NLoS + nth_var_NLoS);
-
-beta_n  = ((rho * G * R_pd * A_pd * p*(m+1))/(2*pi)) * cosd(theta_RS)^m * RIS(3);
-
-delta_0 = sqrt((2/K_0) * sigma_0^2 * erfinv(1-epsilon)^2);
-
-delta_0_tresh = sqrt(2*sigma_0^2 * erfinv(1-epsilon));
-
-delta_n = sqrt((2/K_n)*(sigma_n * erfinv(1-epsilon))^2 + delta_0^2);
-
-gamma_n = ((r_n+d_n)^2 * d_n * beta_n)/(beta_n - (delta_n*(r_n + d_n)^2 * d_n));
-alpha_n = gamma_n;
-%
-%             a = r_n;
-%             A = gamma_n;
-%             b = d_n;
-%             epsilon_n = (1/3) * ((3 * sqrt(3) * sqrt(4 * a^3 * A + 27 * A^2) + 2 * a^3 + 27 * A)^(1/3) / (2^(1/3)) + (2^(1/3) * a^2) / ((3 * sqrt(3) * sqrt(4 * a^3 * A + 27 * A^2) + 2 * a^3 + 27 * A)^(1/3)) - 2 * a - 3 * b);
-
-rad = 1 / (sqrt((27 * r_n^3 * alpha_n) + (729/4)*alpha_n^2) + r_n^3 + (27/2)*alpha_n);
-tao_n = nthroot(rad,3);
-d_est_n = (tao_n/3) * (r_n - (1/tao_n))^2;
-
-epsilon_n = d_est_n - d_n;
-
-if epsilon_n > 0
-    epsilon_n = epsilon_n;
-else
-    epsilon_n = nan;
-end
-end
-
 
 function epsilon_0 = estimate_epsilon_0 (K_0, epsilon, LED, PDect, R_pd, p, q_0, k_B, T_k, eta, I_2, I_3, Gamma,g_m, I_bg, G_0, B, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of)
-m = -(log(2)/log(cosd(Psi)));
-p_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
-
-[~, ~, nsh_var_LoS, nth_var_LoS] = ...
-    noiseEstimation(p_LoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
-
-sigma_0 = sqrt(nsh_var_LoS + nth_var_LoS);
-
-delta_0 = sqrt((2/K_0) * sigma_0^2 * erfinv(1-epsilon)^2);
-
-d_0 = calculateDistance(LED, PDect);
-rad_0 = (p_LoS)/(p_LoS-delta_0);
-sol_rad = nthroot(rad_0,m+3);
-epsilon_0 = d_0 * (sol_rad - 1);
+    m = -(log(2)/log(cosd(Psi)));
+    p_LoS = R_pd*p*singleEntityContribution(LED, 0, PDect, alpha, beta, Phi_FoV, a, rho, Psi, A_pd, T_of, 1); % Ampere
+    
+    [~, ~, nsh_var_LoS, nth_var_LoS] = ...
+        noiseEstimation(p_LoS, q_0, R_pd, k_B, T_k, eta, I_2, I_3, Gamma, A_pd, g_m, I_bg, G_0, B);
+    
+    sigma_0 = sqrt(nsh_var_LoS + nth_var_LoS);
+    
+    delta_0 = sqrt((2/K_0) * sigma_0^2 * erfinv(1-epsilon)^2);
+    
+    d_0 = calculateDistance(LED, PDect);
+    rad_0 = (p_LoS)/(p_LoS-delta_0);
+    sol_rad = nthroot(rad_0,m+3);
+    epsilon_0 = d_0 * (sol_rad - 1);
 end
