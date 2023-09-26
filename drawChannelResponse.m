@@ -3,7 +3,7 @@ function [impulseResponse, number_of_contribution] = drawChannelResponse...
     % (Psi, LED1, LED2, LED3, LED4, PDect, Phi_FoV, A_pd, T_of, a, Entity_enabled, alpha, beta );
     
     % impulse response calc
-    % m = -(log(2)/log(cosd(Psi))); % Lambertian mode number (??? da ignorare?)
+    % m = -(log(2)/log(cosd(Psi))); % Lambertian mode number
     
     % 1. Estimate LED1 contribution
     hLED1_sd = singleEntityContribution(LED1, PDect_pos, alpha, beta, Phi_FoV, a, Psi, A_pd, T_of);
@@ -26,6 +26,5 @@ function [impulseResponse, number_of_contribution] = drawChannelResponse...
         %     number_of_contribution = 1;
     end
     
-    impulseResponse = sum(overall_contribution .* Entity_enabled );
-
+    impulseResponse = sum(overall_contribution .* Entity_enabled);
 end

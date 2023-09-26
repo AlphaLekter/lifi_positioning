@@ -1,9 +1,5 @@
 
-
-
-function estimated_position = leastSquareMethod(anchorPoints, distancesArray, zk)
-
-
+function estimated_position = leastSquareMethod(anchorPoints, distancesArray, zk) %#ok<INUSD>
 
 for i = 1:length(anchorPoints)
     eval(sprintf('Source%d = anchorPoints(%d).position;', i, i));
@@ -17,12 +13,10 @@ for i = 1:length(anchorPoints)
     eval(sprintf('c%d = [x%d y%d z%d];', i, i,i,i));
 end
 
-x0 = [0 0 0]; %punto di partenza
+x0 = [0 0 0]; % punto di partenza
 options = optimoptions(@lsqnonlin,'Algorithm','levenberg-marquardt', 'Display', 'off');
 
-
 if length(anchorPoints) == 5
-    
     %     A = 2* [...
     %         x2-x1, y2-y1 ,z2-z1;    ...
     %         x3-x1, y3-y1 ,z3-z1;    ...
@@ -36,7 +30,6 @@ if length(anchorPoints) == 5
         x4-x1, y4-y1;    ...
         x5-x1, y5-y1;    ...
         ];
-    
     
     %     b = [...
     %         r1^2-r2^2-(x1^2+y1^2+z1^2) + (x2^2+y2^2+z2^2);...
@@ -52,16 +45,11 @@ if length(anchorPoints) == 5
         r1^2-r5^2-(x1^2+y1^2+z1^2) + (x5^2+y5^2+z5^2)- 2*zk*(z4 - z1);...
         ];
     
-    
-    
-    
     estimated_position = pinv(A)*b;
     estimated_position = [estimated_position; zk];
     
     %[estimated_position, ~] = lsqnonlin(@(x)sphere_intersect(x, c1, r1, c2, r2, c3, r3, c4, r4, c5, r5, 5), x0, [], [], options);
-    
 elseif length(anchorPoints) == 4
-    
     %         A = 2* [...
     %         x2-x1, y2-y1 ,z2-z1;    ...
     %         x3-x1, y3-y1 ,z3-z1;    ...
@@ -86,29 +74,23 @@ elseif length(anchorPoints) == 4
         r1^2-r4^2-(x1^2+y1^2+z1^2) + (x4^2+y4^2+z4^2)- 2*zk*(z4 - z1);...
         ];
     
-    
     estimated_position = pinv(A)*b;
     estimated_position = [estimated_position; zk];
     
     %[estimated_position, ~] = lsqnonlin(@(x)sphere_intersect(x, c1, r1, c2, r2, c3, r3, c4, r4, 0, 0, 4), x0, [], [], options);
 elseif length(anchorPoints) == 3
-    
     A =[...
         x2-x1, y2-y1; ...
         x3-x1, y3-y1; ...
         ];
-    
     
     b = (1/2)*[...
         r1^2-r2^2-(x1^2+y1^2+z1^2) + (x2^2+y2^2+z2^2) - 2*zk*(z2 - z1);...
         r1^2-r3^2-(x1^2+y1^2+z1^2) + (x3^2+y3^2+z3^2) - 2*zk*(z3 - z1);...
         ];
     
-    
     estimated_position = pinv(A)*b;
-    
     estimated_position = [estimated_position; zk];
-    
     
     %         A = 2* [...
     %         x2-x1, y2-y1;    ...
@@ -116,12 +98,10 @@ elseif length(anchorPoints) == 3
     %
     %         ];
     %
-    %
     %     b = [...
     %         r1^2-r2^2-(x1^2+y1^2) + (x2^2+y2^2);...
     %         r1^2-r3^2-(x1^2+y1^2) + (x3^2+y3^2);...
     %         ];
-    %
     %
     %     estimated_position = pinv(A)*b;
     %     estimated_position = [estimated_position; zk];
@@ -130,7 +110,4 @@ elseif length(anchorPoints) == 3
 else
     estimated_position = NaN;
 end
-
-
-
 end

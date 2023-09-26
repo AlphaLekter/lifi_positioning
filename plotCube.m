@@ -2,7 +2,8 @@
 function plotCube(LED1, LED2, LED3, LED4, PD, x, y, z)
 pause(eps);
 % Set up the figure
-figure(1);
+f = figure(1);
+f.WindowState = "maximized";
 clf;
 hold on;
 grid on;
@@ -25,10 +26,10 @@ text(LED3(1), LED3(2), LED3(3)+0.3, 'LED3', 'FontSize', 14, 'HorizontalAlignment
 text(LED4(1), LED4(2), LED4(3)+0.3, 'LED3', 'FontSize', 14, 'HorizontalAlignment','center');
 text(PD(1), PD(2), PD(3)+0.3, 'PD', 'FontSize', 14, 'HorizontalAlignment','center');
 
-plot3([PD(1), LED1(1)], [PD(2), LED1(2)], [PD(3), LED1(3)],  'green','LineWidth', 2); % line between PD / LED1
-plot3([PD(1), LED2(1)], [PD(2), LED2(2)], [PD(3), LED2(3)],  'k','LineWidth', 2); % line between PD / LED2
-plot3([PD(1), LED3(1)], [PD(2), LED3(2)], [PD(3), LED3(3)],  'b','LineWidth', 2); % line between PD / LED2
-plot3([PD(1), LED4(1)], [PD(2), LED4(2)], [PD(3), LED4(3)],  'y','LineWidth', 2); % line between PD / LED2
+plot3([PD(1), LED1(1)], [PD(2), LED1(2)], [PD(3), LED1(3)], 'green','LineWidth', 2); % line between PD / LED1
+plot3([PD(1), LED2(1)], [PD(2), LED2(2)], [PD(3), LED2(3)], 'k','LineWidth', 2); % line between PD / LED2
+plot3([PD(1), LED3(1)], [PD(2), LED3(2)], [PD(3), LED3(3)], 'b','LineWidth', 2); % line between PD / LED2
+plot3([PD(1), LED4(1)], [PD(2), LED4(2)], [PD(3), LED4(3)], 'y','LineWidth', 2); % line between PD / LED2
 
 % Set the limits of the plot
 xlim([0 x]);
@@ -36,5 +37,5 @@ ylim([0 y]);
 zlim([0 z]);
 
 view(27,18);
-pause(eps);
+% pause(eps);
 end

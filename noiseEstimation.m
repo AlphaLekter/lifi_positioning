@@ -23,7 +23,6 @@ var_shoot = var_shoot_first_term + var_shoot_second_term;
 % var_vect = var_shoot_sqr*measurements_pickup;
 % shoot = mean(var_vect);
 
-
 shoot=randn(1)*sqrt(var_shoot);
 
 % thermal noise
@@ -41,7 +40,6 @@ var_thermal = ((8*pi*k_B*T_k*eta*A_pd*I_2*B^2)/G_0 + ((4*pi)^2*k_B*T_k*Gamma*eta
 
 thermal =randn(1)*sqrt(var_thermal);
 
-
 if P_curr > 0 
     n_shoot = shoot; 
     n_thermal = thermal;
@@ -50,5 +48,8 @@ else
     n_shoot = 0; 
     n_thermal = 0;
 end
+
+% n_shoot = 0; 
+% n_thermal = 0;
 
 end
